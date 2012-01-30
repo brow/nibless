@@ -35,12 +35,17 @@ comment = do
   manyTill anyChar (try (string "*/"))
 
 cIdentifier :: IndentCharParser () String
-cIdentifier = many1 (oneOf (['a'..'z'] ++ ['A'..'Z'] ++ "_"))
+cIdentifier = do
+  head <- cInitial
+  tail <- many cNonInitial
+  return (head : tail)
+  where cInitial = letter <|> char '_'
+        cNonInitial = cInitial <|> digit
 
 view :: IndentCharParser () View
 view = do
   char '#'
-  cIdentifier
+  cIdentifier <?> "identifier"
   return (View "UIView" Nothing Map.empty [])
 
 main = parseFromFile markup "markup2.txt" >>= print
