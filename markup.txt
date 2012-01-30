@@ -1,0 +1,12 @@
+
+// markup
+
+#view
+  UINavigationBar
+    UIBarButtonItem#refreshButton
+  UITableView#tableView{delegate: self, dataSource: self} 
+
+#headerView
+  UIImageView#imageView // thumbnail goes here
+  UILabel#titleLabel{text: @"This is the title"}
+  UILabel#priceLabel{text: @"$0.99"}

@@ -1,0 +1,7 @@
+/* comment */
+
+#ahoy /* comment */
+
+#hello
+
+/* hi */
