@@ -13,8 +13,8 @@ data View = View  { klass :: String
                   , subviews :: [View]
                   } deriving Show                
 
-ignoring :: Stream s m t => ParsecT s u m a -> ParsecT s u m () -> ParsecT s u m [a]
-ignoring p ignore = many $ do
+ignoring :: Stream s m t => ParsecT s u m a -> ParsecT s u m b -> ParsecT s u m a
+ignoring p ignore = do
   ignore
   result <- p
   ignore
@@ -22,7 +22,7 @@ ignoring p ignore = many $ do
 
 markup :: IndentCharParser () [View]
 markup = do
-  views <- view `ignoring` spacesAndComments
+  views <- many (view `ignoring` spacesAndComments)
   eof
   return views
 
