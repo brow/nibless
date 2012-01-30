@@ -1,17 +1,9 @@
-import Text.ParserCombinators.Parsec.IndentParser 
+import Nibless.Core
 import Data.Map as Map
+import Text.ParserCombinators.Parsec.IndentParser 
 import Text.Parsec
-import Data.Char (isSeparator)
 import Control.Monad
-
-type Property = String
-type Value = String
-type Style = Map.Map Property Value
-data View = View  { klass :: String
-                  , outlet :: Maybe String
-                  , style :: Style
-                  , subviews :: [View]
-                  } deriving Show                
+import Text.Show.Pretty (ppShow)
 
 ignoring :: Stream s m t => ParsecT s u m a -> ParsecT s u m b -> ParsecT s u m a
 ignoring p ignore = do
@@ -22,7 +14,7 @@ ignoring p ignore = do
 
 markup :: IndentCharParser () [View]
 markup = do
-  views <- many (view `ignoring` spacesAndComments)
+  views <- many (viewElem `ignoring` spacesAndComments)
   eof
   return views
 
@@ -34,7 +26,7 @@ comment = do
   string "/*"
   manyTill anyChar (try (string "*/"))
 
-cIdentifier :: IndentCharParser () String
+cIdentifier :: IndentCharParser () Identifier
 cIdentifier = do
   head <- cInitial
   tail <- many cNonInitial
@@ -42,10 +34,58 @@ cIdentifier = do
   where cInitial = letter <|> char '_'
         cNonInitial = cInitial <|> digit
 
-view :: IndentCharParser () View
-view = do
+viewElem :: IndentCharParser () View
+viewElem = do
+  subclass <- optionMaybe subclassAttr
+  outlet <- optionMaybe outletAttr
+  if (subclass, outlet) == (Nothing, Nothing)
+  then
+    fail "either class or outlet is required"
+  else do
+    style <- optionMaybe styleAttr 
+    return (View subclass outlet style [])
+
+outletAttr :: IndentCharParser () Identifier
+outletAttr = do
   char '#'
   cIdentifier <?> "identifier"
-  return (View "UIView" Nothing Map.empty [])
 
-main = parseFromFile markup "markup2.txt" >>= print
+subclassAttr :: IndentCharParser () Identifier
+subclassAttr = do
+  cIdentifier <?> "identifier"
+
+styleAttr :: IndentCharParser () Style
+styleAttr = do
+  assocList <- braces (sepBy pair (char ',')) 
+  return (Map.fromList assocList)
+  where pair = stylePair `ignoring` spacesAndComments
+      
+stylePair :: IndentCharParser () (Identifier, Value)
+stylePair = do
+  identifier <- cIdentifier
+  spacesAndComments
+  char ':'
+  spacesAndComments 
+  val <- value
+  spacesAndComments
+  return (identifier, val)
+
+stringValue :: IndentCharParser () Value
+stringValue = do
+  s <- quotes $ many $ quotedChar
+  return (NSString s)
+  where quotedChar = noneOf "\"" <|> try (string "\\\"" >> return '"')  
+
+expressionValue :: IndentCharParser () Value
+expressionValue = do
+ cIdentifier >>= return . Expression 
+
+value :: IndentCharParser () Value 
+value = (stringValue      <?> "quoted string")    <|>
+        (expressionValue  <?> "Obj-C expression") 
+
+braces = between (char '{') (char '}')
+
+quotes = (between (char '"') (char '"'))
+
+main = parseFromFile markup "markup.txt" >>= putStrLn . ppShow
