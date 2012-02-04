@@ -1,16 +1,10 @@
 import Nibless.Core
+import Nibless.Combinators
 import Data.Map as Map
 import Text.ParserCombinators.Parsec.IndentParser 
 import Text.Parsec
 import Control.Monad
 import Text.Show.Pretty (ppShow)
-
-ignoring :: Stream s m t => ParsecT s u m a -> ParsecT s u m b -> ParsecT s u m a
-ignoring p ignore = do
-  ignore
-  result <- p
-  ignore
-  return result
 
 markup :: IndentCharParser () [View]
 markup = do
@@ -79,13 +73,12 @@ stringValue = do
 expressionValue :: IndentCharParser () Value
 expressionValue = do
  cIdentifier >>= return . Expression 
-
 value :: IndentCharParser () Value 
 value = (stringValue      <?> "quoted string")    <|>
         (expressionValue  <?> "Obj-C expression") 
 
 braces = between (char '{') (char '}')
 
-quotes = (between (char '"') (char '"'))
+quotes = between (char '"') (char '"')
 
 main = parseFromFile markup "markup.txt" >>= putStrLn . ppShow
