@@ -7,11 +7,16 @@ import Control.Monad
 import Text.Show.Pretty (ppShow)
 import System.Environment (getArgs)
 
-markup :: IndentCharParser () [View]
-markup = do
-  views <- many (viewElem `ignoring` spacesAndComments)
+markupDoc :: IndentCharParser () [View]
+markupDoc = do
+  views <- markup
   eof
   return views
+
+markup :: IndentCharParser () [View]
+markup = do
+  spacesAndComments
+  viewElem `endBy` spacesAndComments
 
 spacesAndComments :: IndentCharParser () ()
 spacesAndComments = skipMany (void space <|> void comment)
@@ -84,4 +89,4 @@ quotes = between (char '"') (char '"')
 
 main = do 
   args <- getArgs
-  parseFromFile markup (args !! 0) >>= putStrLn . ppShow
+  parseFromFile markupDoc (args !! 0) >>= putStrLn . ppShow
