@@ -5,6 +5,7 @@ import Text.ParserCombinators.Parsec.IndentParser
 import Text.Parsec
 import Control.Monad
 import Text.Show.Pretty (ppShow)
+import System.Environment (getArgs)
 
 markup :: IndentCharParser () [View]
 markup = do
@@ -81,4 +82,6 @@ braces = between (char '{') (char '}')
 
 quotes = between (char '"') (char '"')
 
-main = parseFromFile markup "markup.txt" >>= putStrLn . ppShow
+main = do 
+  args <- getArgs
+  parseFromFile markup (args !! 0) >>= putStrLn . ppShow
