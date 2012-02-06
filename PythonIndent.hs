@@ -6,7 +6,7 @@ module PythonIndent
 import PythonIndent.Prim
 import Data.List (foldl')
 import Control.Monad
-import Text.Parsec (oneOf, many, lookAhead)
+import Text.ParserCombinators.Parsec (oneOf, many, lookAhead)
 
 indentation :: IndentParser st ()
 indentation = do
@@ -14,8 +14,8 @@ indentation = do
   indentLevel <- getIndentLevel
   case compare consumed indentLevel of
     EQ -> return ()
-    LT -> fail "unexpected unindent"
     GT -> fail "unexpected indent"
+    LT -> fail "unexpected unindent"
 
 indented :: IndentParser st a -> IndentParser st a
 indented p = do

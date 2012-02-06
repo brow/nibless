@@ -13,8 +13,7 @@ line = do
 
 parser = do
   ln1 <- line
-  ln2 <- line
-  ln3 <- indented line
+  sublines <- indented (many line)
   ln4 <- line
   ln5 <- indented line
-  return ln3
+  return sublines
