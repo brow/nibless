@@ -1,4 +1,4 @@
-module Nibless.Combinators where
+module Xocolatl.Combinators where
 
 import Text.Parsec
 import Text.Parsec.Char

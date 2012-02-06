@@ -1,7 +1,0 @@
-/* comment */
-
-#ahoy /* comment */
-
-#hello_there2
-
-/* hi */

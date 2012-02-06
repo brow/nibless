@@ -1,5 +1,5 @@
-import Nibless.Core
-import Nibless.Combinators
+import Xocolatl.Core
+import Xocolatl.Combinators
 import Data.Map as Map
 import Text.ParserCombinators.Parsec.IndentParser 
 import Text.Parsec

@@ -1,4 +1,4 @@
-module Nibless.Core where
+module Xocolatl.Core where
 
 import Data.Map as Map
 
