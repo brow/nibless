@@ -1,13 +1,19 @@
-module Xocolatl.Combinators where
+module Xocolatl.Combinators
+  ( ignoring
+  , manyTill1
+  ) where
 
-import Text.Parsec
-import Text.Parsec.Char
+import Text.ParserCombinators.Parsec
   
-ignoring :: Stream s m t => ParsecT s u m a -> ParsecT s u m b -> ParsecT s u m a
+ignoring :: GenParser tok st a -> GenParser tok st b -> GenParser tok st a
 ignoring p ignore = do
-  ignore
+  skipMany ignore
   result <- p
-  ignore
+  skipMany ignore
   return result
 
-
+manyTill1 :: GenParser tok st a -> GenParser tok st end -> GenParser tok st [a]
+manyTill1 p end = do
+  x <- p
+  xs <- manyTill p end
+  return (x:xs)
