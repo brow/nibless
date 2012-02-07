@@ -2,6 +2,7 @@ module PythonIndent
   ( IndentParser
   , indentation
   , indented
+  , manyIndented
   , emptyLine ) where
 
 import PythonIndent.Prim
@@ -15,35 +16,37 @@ indentation = do
   indentLevel <- getIndentLevel
   case compare consumed indentLevel of
     EQ -> return ()
-    GT -> fail "unexpected indent"
-    LT -> fail "unexpected unindent"
+    GT -> unexpected "indent"
+    LT -> unexpected "unindent"
 
 indented :: IndentParser st a -> IndentParser st a
 indented p = do
   indent
   x <- p
-  dedent
+  dedent 
   return x
+
+manyIndented :: IndentParser st a -> IndentParser st [a]
+manyIndented p = do
+  indent
+  manyTill (skipEmptyLines >> indentation >> p) (try dedent)
+  -- why is `try` needed above? `dedent` should never consume anything
 
 indent :: IndentParser st ()
 indent = do
-  indentLevelAhead <- lookIndentLevel
+  indentLevelAhead <- tryLookIndentUnits
   indentLevel <- getIndentLevel
   if indentLevelAhead > indentLevel
-  then 
-    pushIndentLevel indentLevelAhead
-  else
-    fail "expected an indent" 
+  then pushIndentLevel indentLevelAhead
+  else expected "indent"
 
 dedent :: IndentParser st ()
 dedent = do
-  indentLevelAhead <- lookIndentLevel
+  indentLevelAhead <- tryLookIndentUnits
   indentLevel <- getIndentLevel
   if indentLevelAhead < indentLevel
-  then 
-    void popIndentLevel
-  else do
-    fail "expected an unindent" 
+  then void popIndentLevel
+  else expected "unindent"
 
 getIndentLevel :: IndentParser st Int
 getIndentLevel = getIndentStack >>= return . head
@@ -62,12 +65,21 @@ roundUp :: Integral a => a -> a -> a
 roundUp m n = n + mod (-n) m
 
 indentUnits :: IndentParser st Int
-indentUnits = fmap (foldl' addUnits 0) (many (oneOf " \t"))
-  where addUnits n ' '  = n + 1
-        addUnits n '\t' = roundUp 8 (n + 1)
+indentUnits = fmap (foldl' addUnits 0) (many indentChar)
+  where addUnits n '\t' = roundUp 8 (n + 1)
+        addUnits n _  = n + 1
 
-lookIndentLevel :: IndentParser st Int 
-lookIndentLevel = lookAhead (many (try emptyLine) >> indentUnits) 
+tryLookIndentUnits :: IndentParser st Int 
+tryLookIndentUnits = (try . lookAhead) (skipEmptyLines >> indentUnits) 
+
+expected :: String -> IndentParser st ()
+expected = (void (oneOf []) <?>)
+
+indentChar :: IndentParser st Char
+indentChar = oneOf " \t"
 
 emptyLine :: IndentParser st ()
-emptyLine = many (oneOf " \t") >> void (char '\n')
+emptyLine = many indentChar >> void newline
+
+skipEmptyLines :: IndentParser s ()
+skipEmptyLines = skipMany (try emptyLine) 

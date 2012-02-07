@@ -2,19 +2,16 @@ import PythonIndent
 import PythonIndent.Prim (parseFromFile)
 import Text.Parsec
 import Control.Monad
+import Data.Maybe
+import Text.Show.Pretty (ppShow)
 
-main = parseFromFile parser "file.txt" >>= putStrLn . show
+data Tree = Node String [Tree] deriving Show
 
-line = do
-  skipMany (try emptyLine)
-  indentation
-  x <- many (noneOf "\n")
+main = parseFromFile tree "file.txt" >>= putStrLn . ppShow
+
+tree :: IndentParser st Tree
+tree = do
+  str <- many (noneOf "\n")
   newline
-  return x
-
-parser = do
-  ln1 <- line
-  sublines <- indented (many (try line))
-  ln2 <- line
-  ln3 <- indented line
-  return ln3
+  children <- optionMaybe (try (manyIndented tree))
+  return (Node str (fromMaybe [] children))

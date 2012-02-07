@@ -1,8 +1,7 @@
 apple
+
   banana
 
   cranberry
-
-dog
-  
+    dog
   egg
