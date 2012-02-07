@@ -1,12 +1,13 @@
 module PythonIndent
   ( IndentParser
   , indentation
-  , indented ) where
+  , indented
+  , emptyLine ) where
 
 import PythonIndent.Prim
 import Data.List (foldl')
 import Control.Monad
-import Text.ParserCombinators.Parsec (oneOf, many, lookAhead)
+import Text.ParserCombinators.Parsec
 
 indentation :: IndentParser st ()
 indentation = do
@@ -26,7 +27,7 @@ indented p = do
 
 indent :: IndentParser st ()
 indent = do
-  indentLevelAhead <- lookAhead indentUnits
+  indentLevelAhead <- lookIndentLevel
   indentLevel <- getIndentLevel
   if indentLevelAhead > indentLevel
   then 
@@ -36,7 +37,7 @@ indent = do
 
 dedent :: IndentParser st ()
 dedent = do
-  indentLevelAhead <- lookAhead indentUnits
+  indentLevelAhead <- lookIndentLevel
   indentLevel <- getIndentLevel
   if indentLevelAhead < indentLevel
   then 
@@ -57,12 +58,16 @@ popIndentLevel = do
     [0] -> fail "tried to pop base indent level"
     (x:xs) -> setIndentStack xs >> return x
 
-roundUp ::  Integral a => a -> a -> a
+roundUp :: Integral a => a -> a -> a
 roundUp m n = n + mod (-n) m
 
 indentUnits :: IndentParser st Int
-indentUnits = do
-  indentChars <- many (oneOf " \t")
-  return (foldl' addUnits 0 indentChars)
+indentUnits = fmap (foldl' addUnits 0) (many (oneOf " \t"))
   where addUnits n ' '  = n + 1
         addUnits n '\t' = roundUp 8 (n + 1)
+
+lookIndentLevel :: IndentParser st Int 
+lookIndentLevel = lookAhead (many (try emptyLine) >> indentUnits) 
+
+emptyLine :: IndentParser st ()
+emptyLine = many (oneOf " \t") >> void (char '\n')
