@@ -30,7 +30,7 @@ manyIndented :: PydentParser st a -> PydentParser st [a]
 manyIndented p = do
   indent
   manyTill (skipEmptyLines >> indentation >> p) (try dedent)
-  -- why is `try` needed above? `dedent` should never consume anything
+  -- TODO: why is `try` needed above? `dedent` should never consume anything
 
 indent :: PydentParser st ()
 indent = do
